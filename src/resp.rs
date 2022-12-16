@@ -7,8 +7,8 @@ const CRLF: &[u8] = "\r\n".as_bytes();
 #[derive(Debug)]
 pub enum RESPType {
     Null,
-    Error(String),
     Integer(u64),
+    Error(String),
     BulkString(String),
     Array(Vec<RESPType>),
     SimpleString(String),
@@ -28,8 +28,10 @@ impl RESPType {
         match self {
             Self::BulkString(s) => {
                 result.push(b'$');
+
                 let mut str_bytes = s.as_bytes().to_owned();
                 let mut length_bytes = str_bytes.len().to_string().as_bytes().to_owned();
+
                 result.append(&mut length_bytes);
                 result.append(&mut CRLF.clone().to_owned());
                 result.append(&mut str_bytes);
@@ -37,27 +39,36 @@ impl RESPType {
             }
             Self::SimpleString(s) => {
                 result.push(b'+');
+
                 let mut str_bytes = s.as_bytes().to_owned();
+
                 result.append(&mut str_bytes);
                 result.append(&mut CRLF.clone().to_owned());
             }
             Self::Error(s) => {
                 result.push(b'-');
+
                 let mut str_bytes = s.as_bytes().to_owned();
+
                 result.append(&mut str_bytes);
                 result.append(&mut CRLF.clone().to_owned());
             }
             Self::Integer(i) => {
                 result.push(b':');
+
                 let mut str_bytes = i.to_string().as_bytes().to_owned();
+
                 result.append(&mut str_bytes);
                 result.append(&mut CRLF.clone().to_owned());
             }
             Self::Array(a) => {
                 result.push(b'*');
+
                 let mut str_bytes = a.len().to_string().as_bytes().to_owned();
+
                 result.append(&mut str_bytes);
                 result.append(&mut CRLF.clone().to_owned());
+
                 for item in a {
                     result.append(&mut item.pack());
                 }
@@ -75,6 +86,7 @@ impl RESPType {
         match bytes[0] {
             b'+' => {
                 let n = take_until_crlf(&bytes[1..]);
+
                 return (
                     RESPType::SimpleString(str::from_utf8(&bytes[1..n + 1]).unwrap().to_string()),
                     n + 3,
@@ -82,6 +94,7 @@ impl RESPType {
             }
             b'-' => {
                 let n = take_until_crlf(&bytes[1..]);
+
                 return (
                     RESPType::Error(str::from_utf8(&bytes[1..n + 1]).unwrap().to_string()),
                     n + 3,
@@ -89,6 +102,7 @@ impl RESPType {
             }
             b':' => {
                 let n = take_until_crlf(&bytes[1..]);
+
                 return (
                     RESPType::Integer(str::from_utf8(&bytes[1..n + 1]).unwrap().parse().unwrap()),
                     n + 3,
@@ -100,6 +114,7 @@ impl RESPType {
                     .unwrap()
                     .parse()
                     .unwrap();
+
                 return (
                     RESPType::BulkString(
                         str::from_utf8(&bytes[len_len + 3..len_len + 3 + len])
@@ -115,9 +130,11 @@ impl RESPType {
                     .unwrap()
                     .parse()
                     .unwrap();
+
                 let mut result: Vec<RESPType> = vec![];
                 let mut used_length_in_elements = 0;
                 let header_size = 1 + len_len + 2;
+
                 for _ in 0..num_elements {
                     let (element, used_size) =
                         RESPType::unpack(&bytes[header_size + used_length_in_elements..]);

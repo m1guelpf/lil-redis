@@ -41,6 +41,7 @@ impl App {
             mpsc::Sender<ExectionRequest>,
             mpsc::Receiver<ExectionRequest>,
         ) = mpsc::channel(256);
+
         tokio::spawn(async move {
             let mut cache = Cache::new();
 
@@ -77,6 +78,7 @@ impl App {
         loop {
             let mut buf = [0; MESSAGE_SIZE];
             stream.read(&mut buf).await?;
+
             let (command_buf, _) = RESPType::unpack(&buf);
 
             match command_buf {
