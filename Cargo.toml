@@ -2,7 +2,7 @@
 license = "MIT"
 edition = "2021"
 version = "0.1.0"
-name = "lil-redis"
+name = "lil_redis"
 readme = "README.md"
 homepage = "https://github.com/m1guelpf/lil-redis"
 repository = "https://github.com/m1guelpf/lil-redis"
@@ -12,3 +12,8 @@ description = "An intentionally-limited Rust implementation of the Redis server.
 [dependencies]
 anyhow = "1.0.59"
 tokio = { version = "1.23.0", features = ["full"] }
+
+[dev-dependencies]
+ctor = "0.1.26"
+redis = "0.22.1"
+assert_cmd = "2.0.7"
