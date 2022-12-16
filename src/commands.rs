@@ -14,22 +14,22 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn new<'a>(name: &'a str, args: Vec<&RESPType>) -> Result<Command> {
+    pub fn new(name: &str, args: &[&RESPType]) -> Result<Self> {
         match name.to_lowercase().as_str() {
             "ping" => {
                 let msg = args.get(0).map(|arg| arg.pack_string());
 
                 match msg {
-                    Some(Ok(value)) => Ok(Command::Ping(Some(value.to_string()))),
+                    Some(Ok(value)) => Ok(Self::Ping(Some(value.to_string()))),
                     Some(Err(_)) => Err(Error::msg("Invalid value")),
-                    None => Ok(Command::Ping(None)),
+                    None => Ok(Self::Ping(None)),
                 }
             }
             "get" => {
                 let key = args.get(0).map(|arg| arg.pack_string());
 
                 match key {
-                    Some(Ok(key)) => Ok(Command::Get(key.to_string())),
+                    Some(Ok(key)) => Ok(Self::Get(key.to_string())),
                     _ => Err(Error::msg("Invalid key")),
                 }
             }
@@ -37,7 +37,7 @@ impl Command {
                 let key = args.get(0).map(|arg| arg.pack_string());
 
                 match key {
-                    Some(Ok(key)) => Ok(Command::Echo(key.to_string())),
+                    Some(Ok(key)) => Ok(Self::Echo(key.to_string())),
                     _ => Err(Error::msg("Invalid message")),
                 }
             }
@@ -47,7 +47,7 @@ impl Command {
                 let px = args.get(3).map(|arg| arg.pack_string());
 
                 match (key, value) {
-                    (Some(Ok(key)), Some(Ok(value))) => Ok(Command::Set {
+                    (Some(Ok(key)), Some(Ok(value))) => Ok(Self::Set {
                         key: key.to_string(),
                         value: value.to_string(),
                         px: match px {
@@ -64,17 +64,14 @@ impl Command {
 
     pub fn run(&self, cache: &mut Cache) -> RESPType {
         match self {
-            Command::Echo(msg) => RESPType::BulkString(msg.clone()),
-            Command::Ping(data) => match data {
-                Some(msg) => RESPType::BulkString(msg.clone()),
-                None => RESPType::SimpleString("PONG".to_string()),
-            },
-            Command::Get(key) => match cache.get(&key) {
-                Some(value) => RESPType::BulkString(value),
-                None => RESPType::Null,
-            },
-            Command::Set { key, value, px } => {
-                cache.set(key.clone(), value.clone(), px.clone());
+            Self::Echo(msg) => RESPType::BulkString(msg.clone()),
+            Self::Ping(data) => data.clone().map_or_else(
+                || RESPType::SimpleString("PONG".to_string()),
+                RESPType::BulkString,
+            ),
+            Self::Get(key) => cache.get(key).map_or(RESPType::Null, RESPType::BulkString),
+            Self::Set { key, value, px } => {
+                cache.set(key.clone(), value.clone(), *px);
 
                 RESPType::SimpleString("OK".to_string())
             }
@@ -87,13 +84,13 @@ impl Command {
 impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Command::Get(key) => write!(f, "GET {}", key),
-            Command::Echo(value) => write!(f, "ECHO {}", value),
-            Command::Ping(value) => match value {
-                Some(value) => write!(f, "PING {}", value),
+            Self::Get(key) => write!(f, "GET {key}"),
+            Self::Echo(value) => write!(f, "ECHO {value}"),
+            Self::Ping(value) => match value {
+                Some(value) => write!(f, "PING {value}"),
                 None => write!(f, "PING"),
             },
-            Command::Set { key, value, px } => write!(f, "SET {} {} {:?}", key, value, px),
+            Self::Set { key, value, px } => write!(f, "SET {key} {value} {px:?}"),
         }
     }
 }

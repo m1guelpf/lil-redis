@@ -20,11 +20,8 @@ fn start_server() {
 #[ctor::dtor]
 fn stop_server() {
     unsafe {
-        match PROC {
-            Some(ref mut proc) => {
-                proc.kill().unwrap();
-            }
-            None => {}
+        if let Some(ref mut proc) = PROC {
+            proc.kill().unwrap();
         }
     }
 }

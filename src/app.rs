@@ -19,7 +19,7 @@ pub struct App {
 
 impl App {
     pub fn new() -> Result<Self> {
-        App::with_port("6379")
+        Self::with_port("6379")
     }
 
     pub fn with_port(port: &str) -> Result<Self> {
@@ -33,7 +33,7 @@ impl App {
         let listener = TcpListener::from_std(std_listener)?;
         println!("Server listening on port {port}");
 
-        Ok(App { listener })
+        Ok(Self { listener })
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -57,15 +57,17 @@ impl App {
 
             match incoming {
                 Ok((mut stream, addr)) => {
-                    println!("Handling connection from {:?}", addr);
+                    println!("Handling connection from {addr:?}");
                     let send_ptr = send_cmd.clone();
 
                     tokio::spawn(async move {
-                        App::handle_connection(&mut stream, send_ptr).await.unwrap();
+                        Self::handle_connection(&mut stream, send_ptr)
+                            .await
+                            .unwrap();
                     });
                 }
                 Err(e) => {
-                    println!("error: {}", e);
+                    println!("error: {e}");
                 }
             }
         }
@@ -77,17 +79,16 @@ impl App {
     ) -> Result<()> {
         loop {
             let mut buf = [0; MESSAGE_SIZE];
-            stream.read(&mut buf).await?;
+            _ = stream.read(&mut buf).await?;
 
             let (command_buf, _) = RESPType::unpack(&buf);
 
             match command_buf {
                 RESPType::Array(_) => {
-                    match App::handle_command(command_buf, &mut send_req.clone()).await {
-                        Some(resp) => {
-                            stream.write_all(&resp.pack()).await?;
-                        }
-                        None => {}
+                    if let Some(resp) =
+                        Self::handle_command(command_buf, &mut send_req.clone()).await
+                    {
+                        stream.write_all(&resp.pack()).await?;
                     }
                 }
                 _ => break,
@@ -109,7 +110,7 @@ impl App {
                 return Some(RESPType::Error(err.to_string()));
             }
         };
-        println!("{}", command);
+        println!("{command}");
 
         let process = send_req
             .send(ExectionRequest {
@@ -128,9 +129,9 @@ impl App {
         return match receiver.await {
             Ok(Ok(Some(v))) => Some(v),
             Ok(Err(e)) => Some(RESPType::Error(e)),
-            Err(e) => Some(RESPType::Error(
-                format!("Unexpected error receiving result: {:?}", e).to_string(),
-            )),
+            Err(e) => Some(RESPType::Error(format!(
+                "Unexpected error receiving result: {e:?}"
+            ))),
             _ => None,
         };
     }

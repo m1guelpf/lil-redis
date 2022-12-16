@@ -13,8 +13,8 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub fn new() -> Cache {
-        Cache {
+    pub fn new() -> Self {
+        Self {
             cache: HashMap::with_capacity(128),
         }
     }

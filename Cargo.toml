@@ -8,6 +8,8 @@ homepage = "https://github.com/m1guelpf/lil-redis"
 repository = "https://github.com/m1guelpf/lil-redis"
 authors = ["Miguel Piedrafita <soy@miguelpiedrafita.com>"]
 description = "An intentionally-limited Rust implementation of the Redis server."
+keywords = ["redis", "server", "implementation"]
+categories = ["database"]
 
 [dependencies]
 anyhow = "1.0.59"
