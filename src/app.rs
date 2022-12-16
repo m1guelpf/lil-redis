@@ -23,7 +23,7 @@ impl App {
     }
 
     pub fn with_port(port: &str) -> Result<Self> {
-        let std_listener = match std::net::TcpListener::bind(format!("127.0.0.1:{port}")) {
+        let std_listener = match std::net::TcpListener::bind(format!("0.0.0.0:{port}")) {
             Ok(listener) => listener,
             Err(e) => {
                 return Err(e.into());
